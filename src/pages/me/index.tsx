@@ -31,6 +31,7 @@ export default class app extends Component {
                     {list.map((item, index) => {
                         return (
                             <View key={index}>
+                                111
                                 <AtIcon value={item.icon}></AtIcon>
                                 <Text>{item.title}</Text>
                                 <AtIcon value="dajiantou"></AtIcon>
