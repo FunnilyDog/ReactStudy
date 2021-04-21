@@ -1,0 +1,190 @@
+/* icon.scss */
+@font-face {
+  font-family: 'iconfont';
+
+  /* 安装在线第三方字体图标库 */
+  // prettier-ignore
+  src: url('https://at.alicdn.com/t/font_2241996_lozdyyibw2e.eot');
+  // prettier-ignore
+  src:
+    url('https://at.alicdn.com/t/font_2241996_lozdyyibw2e.eot?#iefix') format('embedded-opentype'),
+    url('https://at.alicdn.com/t/font_2241996_lozdyyibw2e.woff2') format('woff2'),
+    url('https://at.alicdn.com/t/font_2241996_lozdyyibw2e.woff') format('woff'),
+    url('https://at.alicdn.com/t/font_2241996_lozdyyibw2e.ttf') format('truetype'),
+    url('https://at.alicdn.com/t/font_2241996_lozdyyibw2e.svg#iconfont') format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* 根据第三方字体图标库编写 */
+.fa {
+  display: inline-block;
+
+  /* 以下的 font 与上面 @font-face 的 font-family 要一致 */
+  font: normal normal normal 14px/1 'iconfont';
+  font-size: inherit;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.fa-danxuankuang-weixuan_huaban1::before {
+  content: '\e646';
+}
+
+.fa-danxuankuang-xuanze_huaban1::before {
+  content: '\e645';
+}
+
+.fa-fuzhi::before {
+  content: '\e644';
+}
+
+.fa-gengduowenti_huaban1::before {
+  content: '\e643';
+}
+
+.fa-yuanqushuoming::before {
+  content: '\e642';
+}
+
+/* 举例：fa 就是 prefixClass 的值，下面的的图标 css class 命名都要用 fa- 开头  */
+.fa-tianjiamingxi::before {
+  content: '\e641';
+}
+
+.fa-wode1::before {
+  content: '\e640';
+}
+
+.fa-xiamiandanchu-quxiao::before {
+  content: '\e63f';
+}
+
+.fa-sousuokuangchacha::before {
+  content: '\e63e';
+}
+
+.fa-chacha::before {
+  content: '\e63c';
+}
+
+.fa-gougou::before {
+  content: '\e63d';
+}
+
+.fa-xiangji::before {
+  content: '\e63b';
+}
+
+.fa-fapiaotaitou1::before {
+  content: '\e637';
+}
+
+.fa-kaipiaoren1::before {
+  content: '\e638';
+}
+
+.fa-wodefapiao1::before {
+  content: '\e639';
+}
+
+.fa-wodedizhi1::before {
+  content: '\e63a';
+}
+
+.fa-gou::before {
+  content: '\e600';
+}
+
+.fa-laba::before {
+  content: '\e636';
+}
+
+.fa-bianji::before {
+  content: '\e620';
+}
+
+.fa-dajiantou::before {
+  content: '\e621';
+}
+
+.fa-danchukuangchacha::before {
+  content: '\e622';
+}
+
+.fa-fapiao-xuanzhong::before {
+  content: '\e623';
+}
+
+.fa-fapiao::before {
+  content: '\e624';
+}
+
+.fa-fapiaotaitou::before {
+  content: '\e625';
+}
+
+.fa-shanchutupian::before {
+  content: '\e626';
+}
+
+.fa-morentupian::before {
+  content: '\e627';
+}
+
+.fa-huixingzhen::before {
+  content: '\e628';
+}
+
+.fa-shouye-xuanzhong::before {
+  content: '\e629';
+}
+
+.fa-shangchuantupian::before {
+  content: '\e62a';
+}
+
+.fa-wode-xuanzhong::before {
+  content: '\e62b';
+}
+
+.fa-kaipiaoren::before {
+  content: '\e62c';
+}
+
+.fa-tishi::before {
+  content: '\e62d';
+}
+
+.fa-sousuo::before {
+  content: '\e62e';
+}
+
+.fa-wode::before {
+  content: '\e62f';
+}
+
+.fa-shouye::before {
+  content: '\e630';
+}
+
+.fa-shuomingtishi::before {
+  content: '\e631';
+}
+
+.fa-wodedizhi::before {
+  content: '\e632';
+}
+
+.fa-xuanze::before {
+  content: '\e633';
+}
+
+.fa-xiaojiantou::before {
+  content: '\e634';
+}
+
+.fa-wodefapiao::before {
+  content: '\e635';
+}

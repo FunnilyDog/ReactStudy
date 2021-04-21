@@ -1,0 +1,7 @@
+// cdn 地址
+$cdn-url: 'https://resico-static-files.oss-cn-zhangjiakou.aliyuncs.com/weapp/sst/';
+
+// 拼接背景图cdn服务器地址
+@mixin background-image($name) {
+  background-image: url('#{$cdn-url}#{$name}');
+}
