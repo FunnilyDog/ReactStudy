@@ -2,7 +2,10 @@ export default {
   pages: [
     'pages/index/index',
     'pages/invoice/index',
-    'pages/me/index'
+    'pages/me/index',
+    // '/pages/drawer/index',
+    '/pages/order/index',
+
   ],
   window: {
     backgroundTextStyle: 'light',
