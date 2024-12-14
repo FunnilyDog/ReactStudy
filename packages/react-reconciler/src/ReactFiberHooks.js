@@ -3750,6 +3750,7 @@ function dispatchReducerAction<S, A>(
   markUpdateInDevTools(fiber, lane, action);
 }
 
+// setState
 function dispatchSetState<S, A>(
   fiber: Fiber,
   queue: UpdateQueue<S, A>,

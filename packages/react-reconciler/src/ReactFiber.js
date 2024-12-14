@@ -141,38 +141,38 @@ function FiberNode(
   mode: TypeOfMode,
 ) {
   // Instance
-  this.tag = tag;
-  this.key = key;
-  this.elementType = null;
-  this.type = null;
-  this.stateNode = null;
+  this.tag = tag; // 描述此Fiber的启动模式的值（LegacyRoot = 0; ConcurrentRoot = 1）
+  this.key = key; // React key
+  this.elementType = null; // 描述React元素的类型。例如，对于JSX<App />，elementType是App
+  this.type = null;  // 组件类型
+  this.stateNode = null; // 对于类组件，这是类的实例；对于DOM元素，它是对应的DOM节点。
 
   // Fiber
-  this.return = null;
-  this.child = null;
-  this.sibling = null;
-  this.index = 0;
+  this.return = null; // 指向父Fiber
+  this.child = null; // 指向第一个子Fiber
+  this.sibling = null; // 指向其兄弟Fiber
+  this.index = 0; // 子Fiber中的索引位置
 
-  this.ref = null;
-  this.refCleanup = null;
+  this.ref = null; // 如果组件上有ref属性，则该属性指向它
+  this.refCleanup = null; // 如果组件上的ref属性在更新中被删除或更改，此字段会用于追踪需要清理的旧ref
 
-  this.pendingProps = pendingProps;
-  this.memoizedProps = null;
-  this.updateQueue = null;
-  this.memoizedState = null;
-  this.dependencies = null;
+  this.pendingProps = pendingProps; // 正在等待处理的新props
+  this.memoizedProps = null; // 上一次渲染时的props
+  this.updateQueue = null; // 一个队列，包含了该Fiber上的状态更新和副作用
+  this.memoizedState = null; // 上一次渲染时的state
+  this.dependencies = null; // 该Fiber订阅的上下文或其他资源的描述
 
-  this.mode = mode;
+  this.mode = mode; // 描述Fiber工作模式的标志（例如Concurrent模式、Blocking模式等）
 
   // Effects
-  this.flags = NoFlags;
-  this.subtreeFlags = NoFlags;
-  this.deletions = null;
+  this.flags = NoFlags;  // 描述该Fiber发生的副作用的标志（十六进制的标识）
+  this.subtreeFlags = NoFlags; // 描述该Fiber子树中发生的副作用的标志（十六进制的标识）
+  this.deletions = null; // 在commit阶段要删除的子Fiber数组
 
-  this.lanes = NoLanes;
-  this.childLanes = NoLanes;
+  this.lanes = NoLanes; // 与React的并发模式有关的调度概念。
+  this.childLanes = NoLanes; // 与React的并发模式有关的调度概念。
 
-  this.alternate = null;
+  this.alternate = null;  // Current Tree和Work-in-progress (WIP) Tree的互相指向对方tree里的对应单元
 
   if (enableProfilerTimer) {
     // Note: The following is done to avoid a v8 performance cliff.

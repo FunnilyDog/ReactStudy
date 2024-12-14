@@ -430,6 +430,7 @@ function createChildReconciler(
   function useFiber(fiber: Fiber, pendingProps: mixed): Fiber {
     // We currently set sibling to null and index to 0 here because it is easy
     // to forget to do before returning it. E.g. for the single child case.
+    // 使用旧有的fiber节点以及新的props来创建一个新的clone fiber
     const clone = createWorkInProgress(fiber, pendingProps);
     clone.index = 0;
     clone.sibling = null;
@@ -505,6 +506,7 @@ function createChildReconciler(
     }
   }
 
+  // 判断存不存在旧fiber节点，存在就同样调用useFiber，以旧fiber clone一个新fiber出来，没有就重新创建
   function updateElement(
     returnFiber: Fiber,
     current: Fiber | null,
@@ -523,6 +525,7 @@ function createChildReconciler(
       validateFragmentProps(element, updated, returnFiber);
       return updated;
     }
+    // 有旧fiber就单纯的更新
     if (current !== null) {
       if (
         current.elementType === elementType ||
@@ -766,6 +769,14 @@ function createChildReconciler(
 
     return null;
   }
+  /**
+   * 
+   * @param {当前节点的父级} returnFiber 
+   * @param {旧节点} oldFiber 
+   * @param {新的虚拟dom} newChild 
+   * @param {*} lanes 
+   * @returns 
+   */
 
   function updateSlot(
     returnFiber: Fiber,
@@ -1140,8 +1151,10 @@ function createChildReconciler(
         nextOldFiber = oldFiber;
         oldFiber = null;
       } else {
+       // 建立兄弟关系
         nextOldFiber = oldFiber.sibling;
       }
+      // 调用updateSlot,使用新的props来更新旧有fiber节点
       const newFiber = updateSlot(
         returnFiber,
         oldFiber,
@@ -1619,8 +1632,11 @@ function createChildReconciler(
     element: ReactElement,
     lanes: Lanes,
   ): Fiber {
+      // 获取新虚拟dom的key
     const key = element.key;
+    // 旧有的div fiber节点
     let child = currentFirstChild;
+    // 判断旧有fiber存不存在，一定是存在才能diff，否则就是走fiber创建初始化了
     while (child !== null) {
       // TODO: If key === null and child.key === null, then this only applies to
       // the first item in the list.
@@ -1655,7 +1671,9 @@ function createChildReconciler(
               resolveLazy(elementType) === child.type)
           ) {
             deleteRemainingChildren(returnFiber, child.sibling);
+            // 根据新的虚拟dom的props来更新旧有div fiber节点
             const existing = useFiber(child, element.props);
+            // 更新完成后重新设置ref以及父节点
             coerceRef(existing, element);
             existing.return = returnFiber;
             if (__DEV__) {
@@ -1669,11 +1687,13 @@ function createChildReconciler(
         deleteRemainingChildren(returnFiber, child);
         break;
       } else {
+         // 如果key不相等，直接在父节点上把自己整个都删掉
         deleteChild(returnFiber, child);
       }
       child = child.sibling;
     }
 
+    // 走初始化
     if (element.type === REACT_FRAGMENT_TYPE) {
       const created = createFiberFromFragment(
         element.props.children,
