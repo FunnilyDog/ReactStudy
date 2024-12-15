@@ -73,7 +73,7 @@ export const enableLegacyFBSupport = false;
 // Ongoing experiments
 //
 // These are features that we're either actively exploring or are reasonably
-// likely to include in an upcoming release.
+// likely to include in an upcominenableUseEffectEventHookg release.
 // -----------------------------------------------------------------------------
 
 export const enableCache = true;

@@ -371,6 +371,7 @@ type ChildReconciler = (
 // to be able to optimize each path individually by branching early. This needs
 // a compiler or we can do it manually. Helpers that don't need this branching
 // live outside of this function.
+// tips 执行 Fiber 节点的调和（处理诸如新的 Fiber 创建、旧 Fiber 删除或现有 Fiber 更新等操作）
 function createChildReconciler(
   shouldTrackSideEffects: boolean,
 ): ChildReconciler {

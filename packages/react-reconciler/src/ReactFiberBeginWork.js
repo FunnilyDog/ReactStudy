@@ -340,6 +340,7 @@ export function reconcileChildren(
     // won't update its child set by applying minimal side-effects. Instead,
     // we will add them all to the child before it gets rendered. That means
     // we can optimize this reconciliation pass by not tracking side-effects.
+    // tips 如果current为空，说明这个Fiber是首次渲染，React会为nextChildren生成一组新的Fiber节点
     workInProgress.child = mountChildFibers(
       workInProgress,
       null,
@@ -353,6 +354,7 @@ export function reconcileChildren(
 
     // If we had any progressed work already, that is invalid at this point so
     // let's throw it out.
+    // tips 当current非空时，React会利用现有的Fiber节点（current.child）和新的子元素（nextChildren）进行调和
     workInProgress.child = reconcileChildFibers(
       workInProgress,
       current.child,
@@ -3843,6 +3845,7 @@ function beginWork(
   }
 
   if (current !== null) {
+    // tips 这是旧节点，需要检查props和context是否有变化再确认是否需要更新节点
     const oldProps = current.memoizedProps;
     const newProps = workInProgress.pendingProps;
 
@@ -3854,6 +3857,7 @@ function beginWork(
     ) {
       // If props or context changed, mark the fiber as having performed work.
       // This may be unset if the props are determined to be equal later (memo).
+      // tips props和context有变化，说明节点有更新
       didReceiveUpdate = true;
     } else {
       // Neither props nor legacy context changes. Check if there's a pending
@@ -3889,7 +3893,7 @@ function beginWork(
       }
     }
   } else {
-    didReceiveUpdate = false;
+    didReceiveUpdate = false; // tips 这是新节点，要创建，而不是更新
 
     if (getIsHydrating() && isForkedChild(workInProgress)) {
       // Check if this child belongs to a list of muliple children in
@@ -3912,10 +3916,14 @@ function beginWork(
   // the update queue. However, there's an exception: SimpleMemoComponent
   // sometimes bails out later in the begin phase. This indicates that we should
   // move this assignment out of the common path and into each branch.
+
+  // tips 进入beginWork表示开始新的工作阶段，所以要把旧的workInProgress优先级清除掉
   workInProgress.lanes = NoLanes;
 
   switch (workInProgress.tag) {
-    case LazyComponent: {
+    // tips 通过workInProgress的tag属性来确定如何处理当前的Fiber节点
+		// tips 每一种tag对应一种不同的Fiber类型，进入不同的调和过程（reconcileChildren()）
+    case LazyComponent: { // 懒加载组件
       const elementType = workInProgress.elementType;
       return mountLazyComponent(
         current,
@@ -3956,7 +3964,7 @@ function beginWork(
         renderLanes,
       );
     }
-    case HostRoot:
+    case HostRoot: 
       return updateHostRoot(current, workInProgress, renderLanes);
     case HostHoistable:
       if (supportsResources) {

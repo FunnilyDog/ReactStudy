@@ -233,6 +233,7 @@ let inProgressRoot: FiberRoot | null = null;
 let focusedInstanceHandle: null | Fiber = null;
 let shouldFireAfterActiveInstanceBlur: boolean = false;
 
+// tips 遍历副作用列表
 export function commitBeforeMutationEffects(
   root: FiberRoot,
   firstChild: Fiber,
@@ -240,10 +241,10 @@ export function commitBeforeMutationEffects(
   focusedInstanceHandle = prepareForCommit(root.containerInfo);
 
   nextEffect = firstChild;
-  commitBeforeMutationEffects_begin();
+  commitBeforeMutationEffects_begin(); // 遍历fiber，处理节点删除和确认节点在before mutation阶段是否有要处理的副作用
 
-  // We no longer need to track the active instance fiber
-  const shouldFire = shouldFireAfterActiveInstanceBlur;
+// 当一个焦点元素被删除或隐藏时，它会被设置为 true
+  const shouldFire = shouldFireAfterActiveInstanceBlur; 
   shouldFireAfterActiveInstanceBlur = false;
   focusedInstanceHandle = null;
 
@@ -1575,18 +1576,23 @@ function isSuspenseBoundaryBeingHidden(
   return false;
 }
 
+// tips 正式提交
 export function commitMutationEffects(
   root: FiberRoot,
   finishedWork: Fiber,
   committedLanes: Lanes,
 ) {
+
+  // lanes和root被设置为"in progress"状态，表示它们正在被处理
   inProgressLanes = committedLanes;
   inProgressRoot = root;
 
   resetComponentEffectTimers();
 
+  // 递归遍历Fiber，更新副作用节点
   commitMutationEffectsOnFiber(finishedWork, root, committedLanes);
 
+  // 重置进行中的lanes和root
   inProgressLanes = null;
   inProgressRoot = null;
 }
@@ -1620,6 +1626,7 @@ function recursivelyTraverseMutationEffects(
 
 let currentHoistableRoot: HoistableRoot | null = null;
 
+// tips // 递归遍历Fiber，更新副作用节点
 function commitMutationEffectsOnFiber(
   finishedWork: Fiber,
   root: FiberRoot,
@@ -2177,6 +2184,7 @@ function resetFormOnFiber(fiber: Fiber) {
   }
 }
 
+// tips 处理layoutEffects
 export function commitLayoutEffects(
   finishedWork: Fiber,
   root: FiberRoot,
@@ -2187,7 +2195,9 @@ export function commitLayoutEffects(
 
   resetComponentEffectTimers();
 
+  // 创建一个current指向就Fiber树的alternate
   const current = finishedWork.alternate;
+  // 处理那些由useLayoutEffect创建的layout effects
   commitLayoutEffectOnFiber(root, current, finishedWork, committedLanes);
 
   inProgressLanes = null;

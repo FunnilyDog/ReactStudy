@@ -734,14 +734,19 @@ function cutOffTailIfNeeded(
   }
 }
 
+/**
+ * tips 记录Fiber的副作用标志
+ * 为子Fiber创建链表
+ */
 function bubbleProperties(completedWork: Fiber) {
   const didBailout =
     completedWork.alternate !== null &&
     completedWork.alternate.child === completedWork.child;
 
-  let newChildLanes: Lanes = NoLanes;
-  let subtreeFlags = NoFlags;
+  let newChildLanes: Lanes = NoLanes; // tips 合并后的子Fiber的lanes
+  let subtreeFlags = NoFlags; // 子树的flags。
 
+  // tips 当前的Fiber与其alternate（备用/上一次的Fiber）有相同的子节点，则跳过更新
   if (!didBailout) {
     // Bubble up the earliest expiration time.
     if (enableProfilerTimer && (completedWork.mode & ProfileMode) !== NoMode) {
@@ -778,7 +783,9 @@ function bubbleProperties(completedWork: Fiber) {
       completedWork.actualDuration = actualDuration;
       completedWork.treeBaseDuration = treeBaseDuration;
     } else {
+      // 没有bailout，需要冒泡子Fiber的属性到父Fiber
       let child = completedWork.child;
+      // 遍历子Fiber，并合并它们的lanes和flags
       while (child !== null) {
         newChildLanes = mergeLanes(
           newChildLanes,
@@ -791,20 +798,20 @@ function bubbleProperties(completedWork: Fiber) {
         // Update the return pointer so the tree is consistent. This is a code
         // smell because it assumes the commit phase is never concurrent with
         // the render phase. Will address during refactor to alternate model.
-        child.return = completedWork;
+        child.return = completedWork; // Fiber的return指向父Fiber，确保整个Fiber树的一致性
 
         child = child.sibling;
       }
     }
 
-    completedWork.subtreeFlags |= subtreeFlags;
+    completedWork.subtreeFlags |= subtreeFlags; // 合并所有flags（副作用）
   } else {
     // Bubble up the earliest expiration time.
     if (enableProfilerTimer && (completedWork.mode & ProfileMode) !== NoMode) {
       // In profiling mode, resetChildExpirationTime is also used to reset
       // profiler durations.
       let treeBaseDuration = ((completedWork.selfBaseDuration: any): number);
-
+      // 有bailout，只冒泡那些具有“静态”生命周期的flags
       let child = completedWork.child;
       while (child !== null) {
         newChildLanes = mergeLanes(

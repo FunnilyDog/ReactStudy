@@ -196,7 +196,7 @@ import {
   SelectiveHydrationException,
   beginWork,
   replayFunctionComponent,
-} from './ReactFiberBeginWork';
+} from './ReactFibRerBeginWork';
 import {completeWork} from './ReactFiberCompleteWork';
 import {unwindWork, unwindInterruptedWork} from './ReactFiberUnwindWork';
 import {
@@ -2267,24 +2267,10 @@ function renderRootSync(
         workInProgressSuspendedReason !== NotSuspended &&
         workInProgress !== null
       ) {
-        // The work loop is suspended. During a synchronous render, we don't
-        // yield to the main thread. Immediately unwind the stack. This will
-        // trigger either a fallback or an error boundary.
-        // TODO: For discrete and "default" updates (anything that's not
-        // flushSync), we want to wait for the microtasks the flush before
-        // unwinding. Will probably implement this using renderRootConcurrent,
-        // or merge renderRootSync and renderRootConcurrent into the same
-        // function and fork the behavior some other way.
         const unitOfWork = workInProgress;
         const thrownValue = workInProgressThrownValue;
         switch (workInProgressSuspendedReason) {
           case SuspendedOnHydration: {
-            // Selective hydration. An update flowed into a dehydrated tree.
-            // Interrupt the current render so the work loop can switch to the
-            // hydration lane.
-            // TODO: I think we might not need to reset the stack here; we can
-            // just yield and reset the stack when we re-enter the work loop,
-            // like normal.
             resetWorkInProgressStack();
             exitStatus = RootSuspendedAtTheShell;
             break outer;
@@ -2386,6 +2372,7 @@ function workLoopSync() {
 }
 
 function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
+  // 保存当前的执行上下文和 dispatcher
   const prevExecutionContext = executionContext;
   executionContext |= RenderContext;
   const prevDispatcher = pushDispatcher(root.containerInfo);
@@ -2394,6 +2381,7 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
   // If the root or lanes have changed, throw out the existing stack
   // and prepare a fresh one. Otherwise we'll continue where we left off.
   if (workInProgressRoot !== root || workInProgressRootRenderLanes !== lanes) {
+    // 如果当前的工作进度树与传入的 root 或 lanes 不匹配，我们需要为新的渲染任务准备一个新的堆栈。
     if (enableUpdaterTracking) {
       if (isDevToolsPresent) {
         const memoizedUpdaters = root.memoizedUpdaters;
@@ -2432,19 +2420,20 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
     markRenderStarted(lanes);
   }
 
+  // tips 持续的工作循环，除非中断发生，否则会一直尝试完成渲染工作
   outer: do {
     try {
       if (
         workInProgressSuspendedReason !== NotSuspended &&
         workInProgress !== null
       ) {
-        // The work loop is suspended. We need to either unwind the stack or
-        // replay the suspended component.
+        // 如果当前的工作进度是由于某种原因而被挂起的，并且仍然有工作待处理，那么会处理它
         const unitOfWork = workInProgress;
         const thrownValue = workInProgressThrownValue;
+        // 根据不同挂起原因，进行中断、恢复等计算
         resumeOrUnwind: switch (workInProgressSuspendedReason) {
           case SuspendedOnError: {
-            // Unwind then continue with the normal work loop.
+            // 如果工作因错误被挂起，那么工作会被中断，并从最后一个已知的稳定点继续
             workInProgressSuspendedReason = NotSuspended;
             workInProgressThrownValue = null;
             throwAndUnwindWorkLoop(
@@ -2455,6 +2444,7 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
             );
             break;
           }
+          // 工作因等待数据（通常是一个异步请求的结果）而被挂起，
           case SuspendedOnData:
           case SuspendedOnAction: {
             const thenable: Thenable<mixed> = (thrownValue: any);
@@ -2489,6 +2479,7 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
             thenable.then(onResolution, onResolution);
             break outer;
           }
+
           case SuspendedOnImmediate: {
             // If this fiber just suspended, it's possible the data is already
             // cached. Yield to the main thread to give it a chance to ping. If
@@ -2496,20 +2487,22 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
             workInProgressSuspendedReason = SuspendedAndReadyToContinue;
             break outer;
           }
+          // 将挂起的原因更新为SuspendedOnInstanceAndReadyToContinue并中断工作循环，标记为稍后准备好继续执行
           case SuspendedOnInstance: {
             workInProgressSuspendedReason =
               SuspendedOnInstanceAndReadyToContinue;
             break outer;
           }
+          // 表示之前的挂起工作现在已经准备好继续执行
           case SuspendedAndReadyToContinue: {
             const thenable: Thenable<mixed> = (thrownValue: any);
             if (isThenableResolved(thenable)) {
               // The data resolved. Try rendering the component again.
               workInProgressSuspendedReason = NotSuspended;
               workInProgressThrownValue = null;
-              replaySuspendedUnitOfWork(unitOfWork);
+              replaySuspendedUnitOfWork(unitOfWork); // 恢复执行被挂起的工作
             } else {
-              // Otherwise, unwind then continue with the normal work loop.
+              // 继续循环
               workInProgressSuspendedReason = NotSuspended;
               workInProgressThrownValue = null;
               throwAndUnwindWorkLoop(
@@ -2517,7 +2510,7 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
                 unitOfWork,
                 thrownValue,
                 SuspendedAndReadyToContinue,
-              );
+              ); 
             }
             break;
           }
@@ -2547,15 +2540,19 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
                   // suspended. Unlike when a user component suspends, we don't
                   // have to replay anything because the host fiber
                   // already completed.
+                  // 该fiber已完成，不需要再挂起
                   workInProgressSuspendedReason = NotSuspended;
                   workInProgressThrownValue = null;
                   const sibling = hostFiber.sibling;
                   if (sibling !== null) {
+                    // 有兄弟节点，开始处理兄弟节点
                     workInProgress = sibling;
                   } else {
+                    // 没有兄弟节点，回到父节点
                     const returnFiber = hostFiber.return;
                     if (returnFiber !== null) {
                       workInProgress = returnFiber;
+                      // 收集副作用
                       completeUnitOfWork(returnFiber);
                     } else {
                       workInProgress = null;
@@ -2627,6 +2624,7 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
         // likely mocked.
         workLoopSync();
       } else {
+        // 如果没有任何工作被挂起，那么就会继续处理工作循环。
         workLoopConcurrent();
       }
       break;
@@ -2634,6 +2632,7 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
       handleThrow(root, thrownValue);
     }
   } while (true);
+  // 重置了之前保存的执行上下文和dispatcher，确保后续的代码不会受到这个函数的影响
   resetContextDependencies();
 
   popDispatcher(prevDispatcher);
@@ -2646,12 +2645,13 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
     }
   }
 
-  // Check if the tree has completed.
+  // 检查调和是否已完成
   if (workInProgress !== null) {
     // Still work remaining.
     if (enableSchedulingProfiler) {
       markRenderYielded();
     }
+    // 返回一个状态值，表示还有未完成
     return RootInProgress;
   } else {
     // Completed the tree.
@@ -2666,8 +2666,8 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
     // It's safe to process the queue now that the render phase is complete.
     finishQueueingConcurrentUpdates();
 
-    // Return the final exit status.
-    return workInProgressRootExitStatus;
+    // 返回当前渲染root的最终退出状态
+    return workInProgressRootExitStatus; 
   }
 }
 
@@ -2978,10 +2978,11 @@ function panicOnRootError(root: FiberRoot, error: mixed) {
   workInProgress = null;
 }
 
+// tips 负责遍历Fiber节点，同时记录了有副作用节点的关系
 function completeUnitOfWork(unitOfWork: Fiber): void {
   // Attempt to complete the current unit of work, then move to the next
   // sibling. If there are no more siblings, return to the parent fiber.
-  let completedWork: Fiber = unitOfWork;
+  let completedWork: Fiber = unitOfWork; // tips 当前正在完成的工作单元
   do {
     if ((completedWork.flags & Incomplete) !== NoFlags) {
       // This fiber did not complete, because one of its children did not
@@ -2998,7 +2999,7 @@ function completeUnitOfWork(unitOfWork: Fiber): void {
     // The current, flushed, state of this fiber is the alternate. Ideally
     // nothing should rely on this, but relying on it here means that we don't
     // need an additional field on the work in progress.
-    const current = completedWork.alternate;
+    const current = completedWork.alternate; // tips 当前Fiber节点在另一棵树上的版本
     const returnFiber = completedWork.return;
 
     let next;
@@ -3012,6 +3013,7 @@ function completeUnitOfWork(unitOfWork: Fiber): void {
         entangledRenderLanes,
       );
     } else {
+      // tips 调用completeWork函数
       next = completeWork(current, completedWork, entangledRenderLanes);
     }
     if (enableProfilerTimer && (completedWork.mode & ProfileMode) !== NoMode) {
@@ -3019,25 +3021,24 @@ function completeUnitOfWork(unitOfWork: Fiber): void {
       stopProfilerTimerIfRunningAndRecordIncompleteDuration(completedWork);
     }
     if (next !== null) {
-      // Completing this fiber spawned new work. Work on that next.
+      // tips 当前Fiber还有工作要完成
       workInProgress = next;
       return;
     }
 
     const siblingFiber = completedWork.sibling;
     if (siblingFiber !== null) {
-      // If there is more work to do in this returnFiber, do that next.
+      // tips 如果有兄弟节点，则进入兄弟节点的工作
       workInProgress = siblingFiber;
       return;
     }
-    // Otherwise, return to the parent
-    // $FlowFixMe[incompatible-type] we bail out when we get a null
+    // tips 如果没有兄弟节点，回到父节点继续
     completedWork = returnFiber;
     // Update the next thing we're working on in case something throws.
     workInProgress = completedWork;
   } while (completedWork !== null);
 
-  // We've reached the root.
+  // tips 如果处理了整个Fiber树，更新workInProgressRootExitStatus为RootCompleted，表示调和已完成
   if (workInProgressRootExitStatus === RootInProgress) {
     workInProgressRootExitStatus = RootCompleted;
   }

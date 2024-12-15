@@ -133,6 +133,7 @@ if (__DEV__) {
   }
 }
 
+// tips 创建Fiber
 function FiberNode(
   this: $FlowFixMe,
   tag: WorkTag,
