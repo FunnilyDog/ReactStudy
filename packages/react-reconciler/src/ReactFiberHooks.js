@@ -1958,6 +1958,11 @@ function mountStateImpl<S>(initialState: (() => S) | S): Hook {
       }
     }
   }
+   /**
+   * 设置该 hook 的初始值
+   * memoizedState 用来存储当前hook要显示的数据
+   * baseState 用来存储执行setState()的初始数据
+   **/
   hook.memoizedState = hook.baseState = initialState;
   const queue: UpdateQueue<S, BasicStateAction<S>> = {
     pending: null,
@@ -1966,13 +1971,19 @@ function mountStateImpl<S>(initialState: (() => S) | S): Hook {
     lastRenderedReducer: basicStateReducer,
     lastRenderedState: (initialState: any),
   };
+  // 为该 hook 添加一个 queue 结构，用来存放所有的 setState() 操作
   hook.queue = queue;
   return hook;
 }
 
+// tips useState
 function mountState<S>(
   initialState: (() => S) | S,
 ): [S, Dispatch<BasicStateAction<S>>] {
+  /**
+   * 创建一个hook节点，并将其挂载到 currentlyRenderingFiber 链表的最后
+   * @type {Hook}
+   */
   const hook = mountStateImpl(initialState);
   const queue = hook.queue;
   const dispatch: Dispatch<BasicStateAction<S>> = (dispatchSetState.bind(
@@ -1983,6 +1994,13 @@ function mountState<S>(
   queue.dispatch = dispatch;
   return [hook.memoizedState, dispatch];
 }
+
+/**
+ * tips useState()的更新阶段
+ * 传入要更新的值initialState，并返回新的[state, setState]
+ * @param initialState
+ * @returns {[(*|S), Dispatch<S>]}
+ */
 
 function updateState<S>(
   initialState: (() => S) | S,
@@ -3750,7 +3768,13 @@ function dispatchReducerAction<S, A>(
   markUpdateInDevTools(fiber, lane, action);
 }
 
-// setState
+/**
+ * tips 派生一个 setState(action) 方法，并将传入的 action 存放起来
+ * 同一个 useState() 的 setState(action) 方法可能会执行多次，这里会把参数里的 action 均会放到queue.pending的链表中
+ * @param {Fiber} fiber 当前的fiber节点
+ * @param {UpdateQueue<S, A>} queue
+ * @param {A} action 即执行setState()传入的数据，可能是数据，也能是方法，setState(1) 或 setState(prevState => prevState+1);
+ */
 function dispatchSetState<S, A>(
   fiber: Fiber,
   queue: UpdateQueue<S, A>,
@@ -3766,7 +3790,14 @@ function dispatchSetState<S, A>(
     }
   }
 
+  /**
+   * 获取当前 fiber 更新的优先级，
+   * 当前 action 要执行的优先级，就是触发当前fiber更新更新的优先级
+   */
   const lane = requestUpdateLane(fiber);
+  /**
+   * 将 action 操作封装成一个 update节点，用于后续构建链表使用
+   */
   const didScheduleUpdate = dispatchSetStateInternal(
     fiber,
     queue,
@@ -3785,6 +3816,9 @@ function dispatchSetStateInternal<S, A>(
   action: A,
   lane: Lane,
 ): boolean {
+  /**
+   * 将 action 操作封装成一个 update节点，用于后续构建链表使用
+   */
   const update: Update<S, A> = {
     lane,
     revertLane: NoLane,
@@ -3795,6 +3829,9 @@ function dispatchSetStateInternal<S, A>(
   };
 
   if (isRenderPhaseUpdate(fiber)) {
+    /**
+     * 是否是渲染阶段的更新，若是，则拼接到 queue.pending 的后面
+     */
     enqueueRenderPhaseUpdate(queue, update);
   } else {
     const alternate = fiber.alternate;
@@ -3802,9 +3839,17 @@ function dispatchSetStateInternal<S, A>(
       fiber.lanes === NoLanes &&
       (alternate === null || alternate.lanes === NoLanes)
     ) {
-      // The queue is currently empty, which means we can eagerly compute the
-      // next state before entering the render phase. If the new state is the
-      // same as the current state, we may be able to bail out entirely.
+      /**
+       * 当前组件不存在更新，那么首次触发状态更新时，就能立刻计算出最新状态，进而与当前状态比较。
+       * 如果两者一致，则省去了后续render的过程。
+       * 可以直接执行当前的action，用来提前判断是否需要当前的函数组件fiber节点
+       * 若新的state与现在的state一样，我们可以直接提前退出，
+       * 若不相同，则标记该fiber节点是需要更新的；同时计算后的state可以直接用于后面的更新流程，不用再重新计算一次。
+       * 根据这文档， https://www.51cto.com/article/703718.html
+       * 比如从0更新到1，此后每次的更新都是1，即使是相同的值，也会再次重新渲染一次，因为两棵树上的fiber节点，
+       * 在一次更新后，只会有一个fiber节点会消除更新标记，
+       * 再更新一次，另一个对应的节点才会消除更新标记；再下一次，就会进入到当前的流程，然后直接return
+       */
       const lastRenderedReducer = queue.lastRenderedReducer;
       if (lastRenderedReducer !== null) {
         let prevDispatcher = null;
@@ -4099,7 +4144,7 @@ if (enableContextProfiling) {
   (HooksDispatcherOnMount: Dispatcher).unstable_useContextWithBailout =
     unstable_useContextWithBailout;
 }
-
+// 更新
 const HooksDispatcherOnUpdate: Dispatcher = {
   readContext,
 
